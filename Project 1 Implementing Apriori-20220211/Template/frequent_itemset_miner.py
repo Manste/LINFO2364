@@ -18,7 +18,7 @@ any order.
 
 Do not change the signature of the apriori and alternative_miner methods as they will be called by the test script.
 
-__authors__ = "Group 8: Manuelle Ndamtang <manuelle.ndamtang@student.uclouvain.be"
+__authors__ = "Group 8: Manuelle Ndamtang <manuelle.ndamtang@student.uclouvain.be>"
 """
 
 
@@ -54,13 +54,75 @@ class Dataset:
 		return self.transactions[i]
 
 
+class Candidate:
+	def __init__(self, parent, itemset, frequency):
+		self.parent = parent
+		self.itemset = itemset
+		self.frequency = frequency
+
+
 def apriori(filepath, minFrequency):
 	"""Runs the apriori algorithm on the specified file with the given minimum frequency"""
-	# TODO: implementation of the apriori algorithm
-	print("Not implemented")
+	dataset = Dataset(filepath)
+	level = 0
+	candidates = [None]
+	"""
+	While there always exist candidates generated 
+	"""
+	while len(candidates) != 0:
+		# detect frequent itemset
+		candidates = generate_candidates(dataset, level)
+		frequencies(candidates, dataset)
+		frequent_candidates = check_frequencies(candidates, )
+		level += 1
+
+
+def check_frequencies(frequency_per_candidate, min_frequency):
+	frequent_candidates = []
+	for candidate in frequency_per_candidate:
+		if candidate.frequency >= min_frequency:
+			frequent_candidates.append(candidate)
+	return frequent_candidates
+
+
+def frequencies(candidates, dataset):
+	"""Counting candidates using the naive process"""
+	if candidates[0].itemset is None: return dataset.trans_num()
+	for candidate in candidates:
+		"""For each transaction,we check if it contains the itemset."""
+		for transaction in dataset.transactions:
+			if candidate.itemset.issubset(transaction):
+				candidate.frequency += 1/dataset.trans_num()
+
+
+"""
+We will generate candidate based on frequent itemset detected
+"""
+def generate_candidates(dataset, level, last_candidates=[]):
+	from itertools import combinations
+	new_candidates = []
+	if level == 0:
+		new_candidates = [Candidate(None, None, dataset.trans_num())]
+	elif level == 1:
+		for item in dataset.items:
+			new_candidates.append(Candidate(last_candidates, {item}, 0))
+	else:
+		for itemset in combinations(last_candidates, level):
+			temp_parent = list(itemset)
+			temp_set = [parent.itemset for parent in last_candidates]
+			temp_lst = list(frozenset().union(*temp_set))
+			# Check if the corresponding union
+			if len(temp_lst) == level:
+				# ordonne la liste
+				temp_lst.sort()
+				temp_itemset = frozenset(temp_lst)
+				new_candidates.append(Candidate(temp_parent, temp_itemset, 0))
+	return new_candidates
 
 
 def alternative_miner(filepath, minFrequency):
 	"""Runs the alternative frequent itemset mining algorithm on the specified file with the given minimum frequency"""
 	# TODO: either second implementation of the apriori algorithm or implementation of the depth first search algorithm
 	print("Not implemented")
+
+apriori('../Datasets/toy.dat', 0.1)
