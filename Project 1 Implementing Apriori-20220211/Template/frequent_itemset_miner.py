@@ -54,46 +54,50 @@ class Dataset:
 		return self.transactions[i]
 
 
-class Candidate:
-	def __init__(self, parent, itemset, frequency):
-		self.parent = parent
-		self.itemset = itemset
-		self.frequency = frequency
-
-
 def apriori(filepath, minFrequency):
 	"""Runs the apriori algorithm on the specified file with the given minimum frequency"""
 	dataset = Dataset(filepath)
-	level = 0
+	level = 1
 	candidates = [None]
+	frequent_itemsets_per_level = {
+		0 : candidates
+	}
 	"""
 	While there always exist candidates generated 
 	"""
-	while len(candidates) != 0:
+	while True:
 		# detect frequent itemset
 		candidates = generate_candidates(dataset, level, candidates)
-		frequencies(candidates, dataset)
-		frequent_candidates = check_frequencies(candidates, minFrequency)
+		if not candidates:
+			return
+		items_frequencies = frequencies(candidates, dataset)
+		frequent_itemsets_per_level[level] = check_frequencies(items_frequencies, minFrequency)
 		level += 1
 
 
 def check_frequencies(frequency_per_candidate, min_frequency):
 	frequent_candidates = []
-	for candidate in frequency_per_candidate:
-		if candidate.frequency >= min_frequency:
+	for candidate, frequency in frequency_per_candidate.items():
+		if frequency >= min_frequency:
 			frequent_candidates.append(candidate)
-			print(candidate.itemset, " ", candidate.frequency)
+			print("{}  ({})".format(sorted(list(candidate)), frequency))
 	return frequent_candidates
 
 
 def frequencies(candidates, dataset):
 	"""Counting candidates using the naive process"""
-	if candidates[0].itemset is None: return dataset.trans_num()
+	items_frequencies = {}
+	if len(candidates) == 0 or candidates[0] is None: return dataset.trans_num()
 	for candidate in candidates:
 		"""For each transaction,we check if it contains the itemset."""
 		for transaction in dataset.transactions:
-			if candidate.itemset.issubset(transaction):
-				candidate.frequency += 1/dataset.trans_num()
+			if candidate.issubset(transaction):
+				c = frozenset(candidate)
+				if c in items_frequencies.keys():
+					items_frequencies[c] += 1 / dataset.trans_num()
+				else:
+					items_frequencies[c] = 1 / dataset.trans_num()
+	return items_frequencies
 
 
 """
@@ -103,22 +107,16 @@ def generate_candidates(dataset, level, last_candidates=[]):
 	from itertools import combinations
 	new_candidates = []
 	if level == 0:
-		new_candidates = [Candidate(None, None, dataset.trans_num())]
+		new_candidates = [None]
 	elif level == 1:
 		for item in dataset.items:
-			new_candidates.append(Candidate(last_candidates, {item}, 0))
+			new_candidates.append({item})
 	else:
 		for itemset in combinations(last_candidates, level):
 			temp_parent = list(itemset)
-			temp_set = [parent.itemset for parent in last_candidates]
-			temp_lst = list(frozenset().union(*temp_set))
-			# Check if the corresponding union
-			if len(temp_lst) == level:
-				# ordonne la liste
-				temp_lst.sort()
-				temp_itemset = frozenset(temp_lst)
-				new_candidates.append(Candidate(temp_parent, temp_itemset, 0))
-		print(new_candidates)
+			lst = frozenset().union(*temp_parent)
+			if len(lst) == level:
+				new_candidates.append(lst)
 	return new_candidates
 
 
@@ -127,4 +125,4 @@ def alternative_miner(filepath, minFrequency):
 	# TODO: either second implementation of the apriori algorithm or implementation of the depth first search algorithm
 	print("Not implemented")
 
-apriori('../Datasets/toy.dat', 0.1)
+apriori('../Datasets/chess.dat', 0.9)
