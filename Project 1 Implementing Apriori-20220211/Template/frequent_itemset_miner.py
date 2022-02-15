@@ -71,9 +71,9 @@ def apriori(filepath, minFrequency):
 	"""
 	while len(candidates) != 0:
 		# detect frequent itemset
-		candidates = generate_candidates(dataset, level)
+		candidates = generate_candidates(dataset, level, candidates)
 		frequencies(candidates, dataset)
-		frequent_candidates = check_frequencies(candidates, )
+		frequent_candidates = check_frequencies(candidates, minFrequency)
 		level += 1
 
 
@@ -82,6 +82,7 @@ def check_frequencies(frequency_per_candidate, min_frequency):
 	for candidate in frequency_per_candidate:
 		if candidate.frequency >= min_frequency:
 			frequent_candidates.append(candidate)
+			print(candidate.itemset, " ", candidate.frequency)
 	return frequent_candidates
 
 
@@ -117,6 +118,7 @@ def generate_candidates(dataset, level, last_candidates=[]):
 				temp_lst.sort()
 				temp_itemset = frozenset(temp_lst)
 				new_candidates.append(Candidate(temp_parent, temp_itemset, 0))
+		print(new_candidates)
 	return new_candidates
 
 
