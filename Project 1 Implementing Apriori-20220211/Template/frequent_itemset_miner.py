@@ -18,7 +18,8 @@ any order.
 
 Do not change the signature of the apriori and alternative_miner methods as they will be called by the test script.
 
-__authors__ = "Group 8: Manuelle Ndamtang <manuelle.ndamtang@student.uclouvain.be>"
+__authors__ = "Group 8: Manuelle Ndamtang <manuelle.ndamtang@student.uclouvain.be>,
+						Saskia Juffern <saskia.juffern@student.uclouvain.be>"
 """
 
 
@@ -123,6 +124,49 @@ def generate_candidates(dataset, level, last_candidates=[]):
 def alternative_miner(filepath, minFrequency):
 	"""Runs the alternative frequent itemset mining algorithm on the specified file with the given minimum frequency"""
 	# TODO: either second implementation of the apriori algorithm or implementation of the depth first search algorithm
-	print("Not implemented")
+	dataset = Dataset(filepath)
+	minNProd = 2
+	minSupport = 3 / dataset.trans_num()
+	maxLen = max([len(dataset.get_transaction(x)) for x in range(dataset.trans_num())])
 
-apriori('../Datasets/toy.dat', 0.125)
+	#create dictionary of sets of transactions for every item
+	tid = dict()
+	for i in range (dataset.trans_num()):
+		for elem in dataset.get_transaction(i):
+			if not elem in tid.keys():
+				tid[elem] = set()
+				tid[elem].add(i)
+			else:
+				tid[elem].add(i)
+
+	#Step 2: todo: filter tid dict with min support
+
+	for idx in tid.keys():
+		#recursive call
+		eclatRec(idx, tid)
+
+
+	#maybe better if this is done recursively
+	new_tid = dict()
+	for elem1 in tid.keys():
+		for elem2 in tid.keys():
+			if not elem1 == elem2:
+				inter = tid[elem1].intersection(tid[elem2])
+				support = len(inter)/dataset.trans_num()
+				if support > minFrequency:
+					new_tid[elem1, elem2] = inter
+	return tid, new_tid
+
+def eclatRec(focusedIdx, tid):
+	for i in tid.keys():
+		if not i == focusedIdx:
+			intersection = tid[focusedIdx].intersection(tid[i])
+
+
+
+## didn't yet figure out how to go from minFreq to support
+di, new_tid = alternative_miner('../Datasets/toy.dat', 0.3)
+print(di.keys(), new_tid.keys())
+
+
+#apriori('../Datasets/toy.dat', 0.125)
