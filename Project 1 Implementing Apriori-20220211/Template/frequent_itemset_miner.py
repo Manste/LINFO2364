@@ -22,6 +22,8 @@ __authors__ = "Group 8: Manuelle Ndamtang <manuelle.ndamtang@student.uclouvain.b
 						Saskia Juffern <saskia.juffern@student.uclouvain.be>"
 """
 
+from itertools import combinations
+from collections import defaultdict
 
 class Dataset:
 	"""Utility class to manage a dataset stored in a external file."""
@@ -60,52 +62,65 @@ def apriori(filepath, minFrequency):
 	dataset = Dataset(filepath)
 	level = 1
 	candidates = [None]
-	frequent_itemsets_per_level = {
-		0 : candidates
-	}
 	"""
 	While there always exist candidates generated 
 	"""
 	while True:
-		# detect frequent itemset
+		"""
+			We detect the frequent itemset candidate using the antimocity approach for each level:
+			We generate candidates using only superset that are already frequent at each level
+		"""
 		candidates = generate_candidates(dataset, level, candidates)
 		if not candidates:
 			return
 		items_frequencies = frequencies(candidates, dataset)
-		frequent_itemsets_per_level[level] = check_frequencies(items_frequencies, minFrequency)
+		check_frequencies(items_frequencies, minFrequency)
 		level += 1
 
 
+"""
+	After getting the frequency for each itemset, we exclude the non-frequent itemset and print only 
+	the frequent one.
+"""
 def check_frequencies(frequency_per_candidate, min_frequency):
 	frequent_candidates = []
 	for candidate, frequency in frequency_per_candidate.items():
 		if frequency >= min_frequency:
 			frequent_candidates.append(candidate)
-			print("{}  ({})".format(sorted(list(candidate)), frequency))
+			print_itemset(candidate, frequency)
 	return frequent_candidates
 
 
+"""
+	This function print the results.
+"""
+def print_itemset(candidate, frequency):
+	print("{}  ({})".format(sorted(list(candidate)), frequency))
+
+
+"""
+	For each candidate, we find it frequency
+"""
 def frequencies(candidates, dataset):
-	"""Counting candidates using the naive process"""
+	"""
+		Counting candidates using the naive process:
+		for each line of the dataset, check if we find the candidate
+	"""
 	items_frequencies = {}
 	if len(candidates) == 0 or candidates[0] is None: return dataset.trans_num()
+	"""
+		For each transaction,we check if it contains the itemset.
+	"""
 	for candidate in candidates:
-		"""For each transaction,we check if it contains the itemset."""
-		for transaction in dataset.transactions:
-			if candidate.issubset(transaction):
-				c = frozenset(candidate)
-				if c in items_frequencies.keys():
-					items_frequencies[c] += 1 / dataset.trans_num()
-				else:
-					items_frequencies[c] = 1 / dataset.trans_num()
+		c = frozenset(candidate)
+		items_frequencies[c] = len(list(filter(c.issubset, dataset.transactions)))  / dataset.trans_num()
 	return items_frequencies
 
 
 """
-We will generate candidate based on frequent itemset detected
+	We will generate candidate based on frequent itemset detected
 """
 def generate_candidates(dataset, level, last_candidates=[]):
-	from itertools import combinations
 	new_candidates = []
 	if level == 0:
 		new_candidates = [None]
@@ -121,52 +136,71 @@ def generate_candidates(dataset, level, last_candidates=[]):
 	return new_candidates
 
 
+"""
+	This function transform the dataset into a vertical representation where
+	each item is map to its cover
+"""
+def vertical_representation(dataset):
+	transaction_per_item = {frozenset({i}): [] for i in dataset.items}
+	transaction_per_item = defaultdict(frozenset, transaction_per_item)
+	for index, transaction in enumerate(dataset.transactions):
+		for item in transaction_per_item.keys():
+			if item.issubset(transaction):
+				transaction_per_item[item].append(index)
+	return transaction_per_item
+
+
+"""
+	This gives the projected database for a specific itemset
+"""
+def projected_database(transactions_per_item, itemset, minFrequency, total_transaction):
+	projection = defaultdict(frozenset, transactions_per_item.copy())
+	for item in itemset:
+		temp_item = frozenset({item})
+		for i in transactions_per_item.keys():
+			intersection = frozenset(projection[temp_item]).intersection(projection[i])
+			if len(intersection) >= minFrequency*total_transaction: # if selected item (i) in the projected database is frequent
+				projection[i] = intersection
+			else:
+				del projection[i] # delete non frequent item
+		if item in projection:
+			del projection[temp_item] # delete item from the itemset that are present in database
+	return projection
+
+
+"""
+	We opted for the eclat algorithm.
+"""
 def alternative_miner(filepath, minFrequency):
 	"""Runs the alternative frequent itemset mining algorithm on the specified file with the given minimum frequency"""
-	# TODO: either second implementation of the apriori algorithm or implementation of the depth first search algorithm
 	dataset = Dataset(filepath)
-	minNProd = 2
-	minSupport = 3 / dataset.trans_num()
-	maxLen = max([len(dataset.get_transaction(x)) for x in range(dataset.trans_num())])
-
-	#create dictionary of sets of transactions for every item
-	tid = dict()
-	for i in range (dataset.trans_num()):
-		for elem in dataset.get_transaction(i):
-			if not elem in tid.keys():
-				tid[elem] = set()
-				tid[elem].add(i)
-			else:
-				tid[elem].add(i)
-
-	#Step 2: todo: filter tid dict with min support
-
-	for idx in tid.keys():
-		#recursive call
-		eclatRec(idx, tid)
+	vertical_dataset = vertical_representation(dataset)
+	eclat(vertical_dataset, None, minFrequency, dataset)
 
 
-	#maybe better if this is done recursively
-	new_tid = dict()
-	for elem1 in tid.keys():
-		for elem2 in tid.keys():
-			if not elem1 == elem2:
-				inter = tid[elem1].intersection(tid[elem2])
-				support = len(inter)/dataset.trans_num()
-				if support > minFrequency:
-					new_tid[elem1, elem2] = inter
-	return tid, new_tid
+"""
+	This function recursivily search for the frequent itemset and stop it search for a specific
+"""
+def eclat(vertical_dataset, itemset, minFrequency, dataset):
+	items = sorted(list(dataset.items))
+	if itemset:
+		frequency = len(frozenset().union(*vertical_dataset.values())) / dataset.trans_num()
+		union_set = sorted(list(itemset))
+		idx = items.index(union_set[-1])+1
+		if frequency < minFrequency: return
+		else:
+			print_itemset(itemset, frequency)
+	else:
+		idx = 0
+	for index, item in enumerate(items[idx:]):
+		if itemset is None:
+			item_set = {item}
+		else:
+			item_set = set(union_set.copy())
+			item_set.add(item)
+		projected_dataset = projected_database(vertical_dataset, frozenset(item_set), minFrequency, dataset.trans_num())
+		#print(item_set, projected_dataset)
+		eclat(projected_dataset, frozenset(item_set), minFrequency, dataset)
 
-def eclatRec(focusedIdx, tid):
-	for i in tid.keys():
-		if not i == focusedIdx:
-			intersection = tid[focusedIdx].intersection(tid[i])
 
-
-
-## didn't yet figure out how to go from minFreq to support
-di, new_tid = alternative_miner('../Datasets/toy.dat', 0.3)
-print(di.keys(), new_tid.keys())
-
-
-#apriori('../Datasets/toy.dat', 0.125)
+alternative_miner('../Datasets/toy.dat', 0.125)
