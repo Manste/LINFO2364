@@ -82,8 +82,6 @@ def apriori(filepath, minFrequency):
     After getting the frequency for each itemset, we exclude the non-frequent itemset and print only 
     the frequent one.
 """
-
-
 def check_frequencies(frequency_per_candidate, min_frequency):
     frequent_candidates = []
     for candidate, frequency in frequency_per_candidate.items():
@@ -96,8 +94,6 @@ def check_frequencies(frequency_per_candidate, min_frequency):
 """
     This function print the results.
 """
-
-
 def print_itemset(candidate, frequency):
     print("{}  ({})".format(sorted(list(candidate)), frequency))
 
@@ -105,8 +101,6 @@ def print_itemset(candidate, frequency):
 """
     For each candidate, we find it frequency
 """
-
-
 def frequencies(candidates, dataset):
     """
         Counting candidates using the naive process:
@@ -126,8 +120,6 @@ def frequencies(candidates, dataset):
 """
     We will generate candidate based on frequent itemset detected
 """
-
-
 def generate_candidates(dataset, level, last_candidates=[]):
     new_candidates = []
     if level == 0:
@@ -148,8 +140,6 @@ def generate_candidates(dataset, level, last_candidates=[]):
     This function transform the dataset into a vertical representation where
     each item is map to its cover
 """
-
-
 def vertical_representation(dataset):
     transaction_per_item = {frozenset({i}): [] for i in dataset.items}
     transaction_per_item = defaultdict(frozenset, transaction_per_item)
@@ -163,8 +153,6 @@ def vertical_representation(dataset):
 """
     This gives the projected database for a specific itemset
 """
-
-
 def projected_database(transactions_per_item, itemset, minFrequency, total_transaction):
     projection = defaultdict(frozenset, transactions_per_item.copy())
     for item in itemset:
@@ -183,8 +171,6 @@ def projected_database(transactions_per_item, itemset, minFrequency, total_trans
 """
     We opted for the eclat algorithm.
 """
-
-
 def alternative_miner(filepath, minFrequency):
     """Runs the alternative frequent itemset mining algorithm on the specified file with the given minimum frequency"""
     dataset = Dataset(filepath)
@@ -195,8 +181,6 @@ def alternative_miner(filepath, minFrequency):
 """
     This function recursivily search for the frequent itemset and stop it search for a specific
 """
-
-
 def eclat(vertical_dataset, itemset, minFrequency, dataset):
     items = sorted(list(dataset.items))
     if itemset:
@@ -222,25 +206,32 @@ def eclat(vertical_dataset, itemset, minFrequency, dataset):
 if __name__ == '__main__':
     from time import perf_counter
     import pandas as pd
-    import tracemalloc
 
-    apriori_frame_performance = pd.DataFrame(columns=["minFrequency", "duration", "memory"])
-    alternative_miner_frame_performance = pd.DataFrame(columns=["minFrequency", "duration", "memory"])
+    apriori_frame_performance = pd.DataFrame(columns=["minFrequency", "duration"])
+    alternative_miner_frame_performance = pd.DataFrame(columns=["minFrequency", "duration"])
 
-    frames = {"apriori": apriori_frame_performance, "eclat": alternative_miner_frame_performance}
-    filename = "Datasets/toy.dat"
-    minFrequencies = [0.125]#[0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+    frames = {
+        "apriori": {
+            "frame": apriori_frame_performance,
+            "function": apriori
+        }, "eclat": {
+            "frame": alternative_miner_frame_performance,
+            "function": alternative_miner
+        }
+    }
+    filename = "../Datasets/mushroom.dat"
+    minFrequencies = [0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     for minFrequency in minFrequencies:
         for key in frames.keys():
             tic = perf_counter()
-            tracemalloc.start()
-            apriori(filename, minFrequency)
-            tracemalloc.take_snapshot()
-            tracemalloc.stop()
+            # save the stats
+            frames[key]["function"](filename, minFrequency)
             duration = perf_counter() - tic
             new_row = pd.DataFrame({
-                "minFrequency": [key],
-                "duration": [duration],
-                "memory": [gamma]
+                "minFrequency": [minFrequency],
+                "duration": [duration]
             })
-            frame2 = pd.concat([frame2, new_row], ignore_index=True)
+            frames[key]["frame"] = pd.concat([frames[key]["frame"], new_row], ignore_index=True)
+
+    frames["apriori"]["frame"].to_csv("../Performance/apriori.csv", index=False, header=True)
+    frames["eclat"]["frame"].to_csv("../Performance/eclat.csv", index=False, header=True)
