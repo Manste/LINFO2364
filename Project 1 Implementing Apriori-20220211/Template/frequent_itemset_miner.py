@@ -18,12 +18,9 @@ any order.
 
 Do not change the signature of the apriori and alternative_miner methods as they will be called by the test script.
 
-__authors__ = "Group 8: Manuelle Ndamtang <manuelle.ndamtang@student.uclouvain.be>,
-						Saskia Juffern <saskia.juffern@student.uclouvain.be>"
+__authors__ = "<write here your group, first name(s) and last name(s)>"
 """
 
-from itertools import combinations
-from collections import defaultdict
 
 class Dataset:
 	"""Utility class to manage a dataset stored in a external file."""
@@ -59,148 +56,11 @@ class Dataset:
 
 def apriori(filepath, minFrequency):
 	"""Runs the apriori algorithm on the specified file with the given minimum frequency"""
-	dataset = Dataset(filepath)
-	level = 1
-	candidates = [None]
-	"""
-	While there always exist candidates generated 
-	"""
-	while True:
-		"""
-			We detect the frequent itemset candidate using the antimocity approach for each level:
-			We generate candidates using only superset that are already frequent at each level
-		"""
-		candidates = generate_candidates(dataset, level, candidates)
-		if not candidates:
-			return
-		items_frequencies = frequencies(candidates, dataset)
-		check_frequencies(items_frequencies, minFrequency)
-		level += 1
+	# TODO: implementation of the apriori algorithm
+	print("Not implemented")
 
 
-"""
-	After getting the frequency for each itemset, we exclude the non-frequent itemset and print only 
-	the frequent one.
-"""
-def check_frequencies(frequency_per_candidate, min_frequency):
-	frequent_candidates = []
-	for candidate, frequency in frequency_per_candidate.items():
-		if frequency >= min_frequency:
-			frequent_candidates.append(candidate)
-			print_itemset(candidate, frequency)
-	return frequent_candidates
-
-
-"""
-	This function print the results.
-"""
-def print_itemset(candidate, frequency):
-	print("{}  ({})".format(sorted(list(candidate)), frequency))
-
-
-"""
-	For each candidate, we find it frequency
-"""
-def frequencies(candidates, dataset):
-	"""
-		Counting candidates using the naive process:
-		for each line of the dataset, check if we find the candidate
-	"""
-	items_frequencies = {}
-	if len(candidates) == 0 or candidates[0] is None: return dataset.trans_num()
-	"""
-		For each transaction,we check if it contains the itemset.
-	"""
-	for candidate in candidates:
-		c = frozenset(candidate)
-		items_frequencies[c] = len(list(filter(c.issubset, dataset.transactions)))  / dataset.trans_num()
-	return items_frequencies
-
-
-"""
-	We will generate candidate based on frequent itemset detected
-"""
-def generate_candidates(dataset, level, last_candidates=[]):
-	new_candidates = []
-	if level == 0:
-		new_candidates = [None]
-	elif level == 1:
-		for item in dataset.items:
-			new_candidates.append({item})
-	else:
-		for itemset in combinations(last_candidates, level):
-			temp_parent = list(itemset)
-			lst = frozenset().union(*temp_parent)
-			if len(lst) == level:
-				new_candidates.append(lst)
-	return new_candidates
-
-
-"""
-	This function transform the dataset into a vertical representation where
-	each item is map to its cover
-"""
-def vertical_representation(dataset):
-	transaction_per_item = {frozenset({i}): [] for i in dataset.items}
-	transaction_per_item = defaultdict(frozenset, transaction_per_item)
-	for index, transaction in enumerate(dataset.transactions):
-		for item in transaction_per_item.keys():
-			if item.issubset(transaction):
-				transaction_per_item[item].append(index)
-	return transaction_per_item
-
-
-"""
-	This gives the projected database for a specific itemset
-"""
-def projected_database(transactions_per_item, itemset, minFrequency, total_transaction):
-	projection = defaultdict(frozenset, transactions_per_item.copy())
-	for item in itemset:
-		temp_item = frozenset({item})
-		for i in transactions_per_item.keys():
-			intersection = frozenset(projection[temp_item]).intersection(projection[i])
-			if len(intersection) >= minFrequency*total_transaction: # if selected item (i) in the projected database is frequent
-				projection[i] = intersection
-			else:
-				del projection[i] # delete non frequent item
-		if item in projection:
-			del projection[temp_item] # delete item from the itemset that are present in database
-	return projection
-
-
-"""
-	We opted for the eclat algorithm.
-"""
 def alternative_miner(filepath, minFrequency):
 	"""Runs the alternative frequent itemset mining algorithm on the specified file with the given minimum frequency"""
-	dataset = Dataset(filepath)
-	vertical_dataset = vertical_representation(dataset)
-	eclat(vertical_dataset, None, minFrequency, dataset)
-
-
-"""
-	This function recursivily search for the frequent itemset and stop it search for a specific
-"""
-def eclat(vertical_dataset, itemset, minFrequency, dataset):
-	items = sorted(list(dataset.items))
-	if itemset:
-		frequency = len(frozenset().union(*vertical_dataset.values())) / dataset.trans_num()
-		union_set = sorted(list(itemset))
-		idx = items.index(union_set[-1])+1
-		if frequency < minFrequency: return
-		else:
-			print_itemset(itemset, frequency)
-	else:
-		idx = 0
-	for index, item in enumerate(items[idx:]):
-		if itemset is None:
-			item_set = {item}
-		else:
-			item_set = set(union_set.copy())
-			item_set.add(item)
-		projected_dataset = projected_database(vertical_dataset, frozenset(item_set), minFrequency, dataset.trans_num())
-		#print(item_set, projected_dataset)
-		eclat(projected_dataset, frozenset(item_set), minFrequency, dataset)
-
-
-alternative_miner('../Datasets/toy.dat', 0.125)
+	# TODO: either second implementation of the apriori algorithm or implementation of the depth first search algorithm
+	print("Not implemented")
