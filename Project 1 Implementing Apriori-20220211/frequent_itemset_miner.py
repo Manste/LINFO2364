@@ -73,8 +73,8 @@ def apriori(filepath, minFrequency):
         candidates = generate_candidates(dataset, level, candidates)
         if not candidates:
             return
-        items_frequencies = frequencies(candidates, dataset)
-        candidates = check_frequencies(items_frequencies, minFrequency) # update candidates variables so that in the next search, it will generate candidates only based on the frequent ones
+        items_supports = support(candidates, dataset)
+        candidates = check_frequencies(items_supports, minFrequency, dataset.trans_num()) # update candidates variables so that in the next search, it will generate candidates only based on the frequent ones
         level += 1
 
 
@@ -82,9 +82,10 @@ def apriori(filepath, minFrequency):
     After getting the frequency for each itemset, we exclude the non-frequent itemset and print only 
     the frequent one.
 """
-def check_frequencies(frequency_per_candidate, min_frequency):
+def check_frequencies(support_per_candidate, min_frequency, transaction_num):
     frequent_candidates = []
-    for candidate, frequency in frequency_per_candidate.items():
+    for candidate, support in support_per_candidate.items():
+        frequency = support/transaction_num
         if frequency >= min_frequency:
             frequent_candidates.append(candidate)
             print_itemset(candidate, frequency)
@@ -99,22 +100,24 @@ def print_itemset(candidate, frequency):
 
 
 """
-    For each candidate, we find it frequency
+    For each candidate, we find its support
 """
-def frequencies(candidates, dataset):
+def support(candidates, dataset):
     """
         Counting candidates using the naive process:
         for each line of the dataset, check if we find the candidate
     """
-    items_frequencies = {}
+    items_supports = { frozenset(c): 0 for c in candidates}
     if len(candidates) == 0 or candidates[0] is None: return dataset.trans_num()
     """
         For each transaction,we check if it contains the itemset.
     """
-    for candidate in candidates:
-        c = frozenset(candidate)
-        items_frequencies[c] = len(list(filter(c.issubset, dataset.transactions))) / dataset.trans_num()
-    return items_frequencies
+    for transaction in dataset.transactions:
+        t = frozenset(transaction)
+        for candidate in items_supports:
+            if candidate.issubset(t):
+                items_supports[candidate] += 1
+    return items_supports
 
 
 """
