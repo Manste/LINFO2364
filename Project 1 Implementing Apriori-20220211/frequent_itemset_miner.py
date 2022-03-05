@@ -230,7 +230,7 @@ if __name__ == '__main__':
         for key in frames.keys():
             tic = perf_counter()
             # save the stats
-            alternative_miner(filename, minFrequency)
+            frames[key]["function"](filename, minFrequency)
             duration = perf_counter() - tic
             new_row = pd.DataFrame({
                 "minFrequency": [minFrequency],
@@ -238,5 +238,5 @@ if __name__ == '__main__':
             })
             frames[key]["frame"] = pd.concat([frames[key]["frame"], new_row], ignore_index=True)
 
-    frames["apriori"]["frame"].to_csv("../Performance/apriori.csv", index=False, header=True)
-    frames["eclat"]["frame"].to_csv("../Performance/eclat.csv", index=False, header=True)
+    frames["apriori"]["frame"].to_csv("./Performance/apriori.csv", index=False, header=True)
+    frames["eclat"]["frame"].to_csv("./Performance/eclat.csv", index=False, header=True)
