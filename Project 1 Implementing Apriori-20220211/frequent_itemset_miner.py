@@ -176,7 +176,10 @@ def alternative_miner(filepath, minFrequency):
     """Runs the alternative frequent itemset mining algorithm on the specified file with the given minimum frequency"""
     dataset = Dataset(filepath)
     vertical_dataset = vertical_representation(dataset)
-    eclat(vertical_dataset, None, minFrequency, dataset)
+    for item in dataset.items:
+        item_set = {item}
+        projected_dataset = projected_database(vertical_dataset, frozenset(item_set), minFrequency, dataset.trans_num())
+        eclat(projected_dataset, frozenset(item_set), minFrequency, dataset)
 
 
 """
@@ -184,20 +187,15 @@ def alternative_miner(filepath, minFrequency):
 """
 def eclat(vertical_dataset, itemset, minFrequency, dataset):
     items = sorted(list(dataset.items))
-    if itemset:
-        frequency = len(frozenset().union(*vertical_dataset.values())) / dataset.trans_num()
-        union_set = sorted(list(itemset))
-        idx = items.index(union_set[-1]) + 1
-        if frequency < minFrequency:
-            return
-        else:
-            print_itemset(itemset, frequency)
+    frequency = len(frozenset().union(*vertical_dataset.values())) / dataset.trans_num()
+    union_set = sorted(list(itemset))
+    idx = items.index(union_set[-1]) + 1
+    if frequency < minFrequency:
+        return
     else:
-        idx = 0
+        print_itemset(itemset, frequency)
     for index, item in enumerate(items[idx:]): # We will generate candidate that are in a sorter manner, that why we use the index variable
-        if itemset is None:
-            item_set = {item}
-        elif frozenset({item}) in vertical_dataset: # to make sure we will only generate candidate that might be frequent and present in dataset
+        if frozenset({item}) in vertical_dataset: # to make sure we will only generate candidate that might be frequent and present in dataset
             item_set = set(union_set.copy())
             item_set.add(item)
         else:
@@ -222,8 +220,8 @@ if __name__ == '__main__':
             "function": alternative_miner
         }
     }
-    filenames = [ "toy.dat", "accidents.dat", "mushroom.dat", "connect.dat", "chess.dat"]
-    minFrequencies = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+    filenames = ["toy.dat", "chess.dat", "accidents.dat", "mushroom.dat", "connect.dat"]
+    minFrequencies = [ 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     for filename in filenames:
         plus_folder = './Datasets/{}'.format(filename)
         for minFrequency in minFrequencies:
