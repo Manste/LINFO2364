@@ -222,19 +222,21 @@ if __name__ == '__main__':
             "function": alternative_miner
         }
     }
-    filename = "./Datasets/chess.dat"
+    filenames = [ "toy.dat", "accidents.dat", "mushroom.dat", "connect.dat", "chess.dat"]
     minFrequencies = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
-    for minFrequency in minFrequencies:
-        for key in frames.keys():
-            tic = perf_counter()
-            # save the stats
-            frames[key]["function"](filename, minFrequency)
-            duration = perf_counter() - tic
-            new_row = pd.DataFrame({
-                "minFrequency": [minFrequency],
-                "duration": [duration]
-            })
-            frames[key]["frame"] = pd.concat([frames[key]["frame"], new_row], ignore_index=True)
-
-    frames["apriori"]["frame"].to_csv("./Performance/apriori.csv", index=False, header=True)
-    frames["eclat"]["frame"].to_csv("./Performance/eclat.csv", index=False, header=True)
+    for filename in filenames:
+        plus_folder = './Datasets/{}'.format(filename)
+        for minFrequency in minFrequencies:
+            for key in frames.keys():
+                print("\n\nFrequent itemsets of {} with minFrequency {} and {} algorithm".format(filename, minFrequency, key))
+                tic = perf_counter()
+                # save the stats
+                frames[key]["function"](plus_folder, minFrequency)
+                duration = perf_counter() - tic
+                new_row = pd.DataFrame({
+                    "minFrequency": [minFrequency],
+                    "duration": [duration]
+                })
+                frames[key]["frame"] = pd.concat([frames[key]["frame"], new_row], ignore_index=True)
+        frames["apriori"]["frame"].to_csv("./Performance/apriori{}.csv".format(filename[0:-4]), index=False, header=True)
+        frames["eclat"]["frame"].to_csv("./Performance/eclat{}.csv".format(filename[0:-4]), index=False, header=True)
