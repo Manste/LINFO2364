@@ -196,12 +196,14 @@ def eclat(vertical_dataset, itemset, minFrequency, dataset):
             print_itemset(itemset, frequency)
     else:
         idx = 0
-    for index, item in enumerate(items[idx:]):
+    for index, item in enumerate(items[idx:]): # We will generate candidate that are in a sorter manner, that why we use the index variable
         if itemset is None:
             item_set = {item}
-        else:
+        elif frozenset({item}) in vertical_dataset: # to make sure we will only generate candidate that might be frequent and present in dataset
             item_set = set(union_set.copy())
             item_set.add(item)
+        else:
+            continue
         projected_dataset = projected_database(vertical_dataset, frozenset(item_set), minFrequency, dataset.trans_num())
         eclat(projected_dataset, frozenset(item_set), minFrequency, dataset)
 
@@ -228,7 +230,7 @@ if __name__ == '__main__':
         for key in frames.keys():
             tic = perf_counter()
             # save the stats
-            frames[key]["function"](filename, minFrequency)
+            alternative_miner(filename, minFrequency)
             duration = perf_counter() - tic
             new_row = pd.DataFrame({
                 "minFrequency": [minFrequency],
