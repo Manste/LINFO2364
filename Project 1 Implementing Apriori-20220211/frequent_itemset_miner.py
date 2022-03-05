@@ -128,12 +128,10 @@ def generate_candidates(dataset, level, last_candidates=[]):
     if level == 0:
         new_candidates = [None]
     elif level == 1:
-        for item in dataset.items:
-            new_candidates.append({item})
+        new_candidates = [{item} for item in dataset.items]
     else:
-        for itemset in combinations(last_candidates, level):
-            temp_parent = list(itemset)
-            lst = frozenset().union(*temp_parent)
+        for itemset in  map(list, combinations(last_candidates, level)):
+            lst = frozenset().union(*itemset)
             if len(lst) == level:
                 new_candidates.append(lst)
     return new_candidates
