@@ -219,8 +219,8 @@ if __name__ == '__main__':
             "function": alternative_miner
         }
     }
-    filename = "../Datasets/mushroom.dat"
-    minFrequencies = [0.95, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+    filename = "../Datasets/chess.dat"
+    minFrequencies = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     for minFrequency in minFrequencies:
         for key in frames.keys():
             tic = perf_counter()
