@@ -74,7 +74,7 @@ def apriori(filepath, minFrequency):
         if not candidates:
             return
         items_frequencies = frequencies(candidates, dataset)
-        check_frequencies(items_frequencies, minFrequency)
+        candidates = check_frequencies(items_frequencies, minFrequency) # update candidates variables so that in the next search, it will generate candidates only based on the frequent ones
         level += 1
 
 
@@ -179,7 +179,7 @@ def alternative_miner(filepath, minFrequency):
 
 
 """
-    This function recursivily search for the frequent itemset and stop it search for a specific
+    This function recursivily search for the frequent itemset and stop it search for a specific itemset is not frequent
 """
 def eclat(vertical_dataset, itemset, minFrequency, dataset):
     items = sorted(list(dataset.items))
@@ -219,7 +219,7 @@ if __name__ == '__main__':
             "function": alternative_miner
         }
     }
-    filename = "../Datasets/chess.dat"
+    filename = "./Datasets/chess.dat"
     minFrequencies = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     for minFrequency in minFrequencies:
         for key in frames.keys():
