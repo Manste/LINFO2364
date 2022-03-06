@@ -127,10 +127,10 @@ def generate_candidates(dataset, level, last_candidates=[]):
     elif level == 1:
         new_candidates = [{item} for item in dataset.items]
     else:
-        for itemset in  map(list, combinations(last_candidates, level)):
-            lst = frozenset().union(*itemset)
-            if len(lst) == level:
-                new_candidates.append(lst)
+        for index, itemset1 in  enumerate(last_candidates):
+            for itemset2 in last_candidates[index:]:
+                if itemset1 != itemset2 and sorted(list(itemset1))[:-1] == sorted(list(itemset2))[:-1]: # check if the end is different
+                    new_candidates.append(frozenset().union(*[itemset1, itemset2]))
     return new_candidates
 
 
@@ -204,9 +204,10 @@ def eclat(vertical_dataset, itemset, minFrequency, dataset):
 if __name__ == '__main__':
     from time import perf_counter
     import pandas as pd
+    import tracemalloc
 
-    apriori_frame_performance = pd.DataFrame(columns=["minFrequency", "duration"])
-    alternative_miner_frame_performance = pd.DataFrame(columns=["minFrequency", "duration"])
+    apriori_frame_performance = pd.DataFrame(columns=["minFrequency", "duration", "currentMemoryUsage", "Peak"])
+    alternative_miner_frame_performance = pd.DataFrame(columns=["minFrequency", "duration", "currentMemoryUsage", "Peak"])
 
     frames = {
         "apriori": {
@@ -228,10 +229,15 @@ if __name__ == '__main__':
                 # save the stats
                 frames[key]["function"](plus_folder, minFrequency)
                 duration = perf_counter() - tic
+                tracemalloc.start()
+                current, peak = tracemalloc.get_traced_memory()
                 new_row = pd.DataFrame({
                     "minFrequency": [minFrequency],
-                    "duration": [duration]
+                    "duration": [duration],
+                    "currentMemoryUsage": [current/(1024**2)],# In MB
+                    "Peak": [peak/(1024**2)] # in MB
                 })
+                tracemalloc.stop()
                 frames[key]["frame"] = pd.concat([frames[key]["frame"], new_row], ignore_index=True)
             frames["apriori"]["frame"].to_csv("./Performance/apriori{}.csv".format(filename[0:-4]), index=False, header=True)
             frames["eclat"]["frame"].to_csv("./Performance/eclat{}.csv".format(filename[0:-4]), index=False, header=True)
