@@ -218,7 +218,7 @@ if __name__ == '__main__':
             "function": alternative_miner
         }
     }
-    filenames = ["chess.dat", "accidents.dat", "mushroom.dat", "connect.dat"]
+    filenames = ["mushroom.dat"]
     minFrequencies = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     for filename in filenames:
         plus_folder = './Datasets/{}'.format(filename)
@@ -227,16 +227,16 @@ if __name__ == '__main__':
                 print("\n\nFrequent itemsets of {} with minFrequency {} and {} algorithm".format(filename, minFrequency, key))
                 tic = perf_counter()
                 # save the stats
+                tracemalloc.start()
                 frames[key]["function"](plus_folder, minFrequency)
                 duration = perf_counter() - tic
-                tracemalloc.start()
+                current, peak = tracemalloc.get_traced_memory()
                 new_row = pd.DataFrame({
                     "minFrequency": [minFrequency],
                     "duration": [duration],
                     "currentMemoryUsage": [current/(1024**2)],# In MB
                     "Peak": [peak/(1024**2)] # in MB
                 })
-                current, peak = tracemalloc.get_traced_memory()
                 tracemalloc.stop()
                 frames[key]["frame"] = pd.concat([frames[key]["frame"], new_row], ignore_index=True)
             frames["apriori"]["frame"].to_csv("./Performance/apriori{}.csv".format(filename[0:-4]), index=False, header=True)
