@@ -229,8 +229,8 @@ if __name__ == '__main__':
                 # save the stats
                 tracemalloc.start()
                 frames[key]["function"](plus_folder, minFrequency)
-                duration = perf_counter() - tic
                 current, peak = tracemalloc.get_traced_memory()
+                duration = perf_counter() - tic
                 new_row = pd.DataFrame({
                     "minFrequency": [minFrequency],
                     "duration": [duration],
