@@ -73,19 +73,18 @@ def apriori(filepath, minFrequency):
         candidates = generate_candidates(dataset, level, candidates)
         if not candidates:
             return
-        items_supports = support(candidates, dataset)
-        candidates = check_frequencies(items_supports, minFrequency, dataset.trans_num()) # update candidates variables so that in the next search, it will generate candidates only based on the frequent ones
+        items_supports = frequencies(candidates, dataset)
+        candidates = check_frequencies(items_supports, minFrequency) # update candidates variables so that in the next search, it will generate candidates only based on the frequent ones
         level += 1
 
 
 """
-    After getting the frequency for each itemset, we exclude the non-frequent itemset and print only 
-    the frequent one.
+	After getting the frequency for each itemset, we exclude the non-frequent itemset and print only 
+	the frequent one.
 """
-def check_frequencies(support_per_candidate, min_frequency, transaction_num):
+def check_frequencies(frequency_per_candidate, min_frequency):
     frequent_candidates = []
-    for candidate, support in support_per_candidate.items():
-        frequency = support/transaction_num
+    for candidate, frequency in frequency_per_candidate.items():
         if frequency >= min_frequency:
             frequent_candidates.append(candidate)
             print_itemset(candidate, frequency)
@@ -100,24 +99,22 @@ def print_itemset(candidate, frequency):
 
 
 """
-    For each candidate, we find its support
+	For each candidate, we find it frequency
 """
-def support(candidates, dataset):
+def frequencies(candidates, dataset):
     """
         Counting candidates using the naive process:
         for each line of the dataset, check if we find the candidate
     """
-    items_supports = { frozenset(c): 0 for c in candidates}
+    items_frequencies = {}
     if len(candidates) == 0 or candidates[0] is None: return dataset.trans_num()
     """
         For each transaction,we check if it contains the itemset.
     """
-    for transaction in dataset.transactions:
-        t = frozenset(transaction)
-        for candidate in items_supports:
-            if candidate.issubset(t):
-                items_supports[candidate] += 1
-    return items_supports
+    for candidate in candidates:
+        c = frozenset(candidate)
+        items_frequencies[c] = len(list(filter(c.issubset, dataset.transactions))) / dataset.trans_num()
+    return items_frequencies
 
 
 """
@@ -220,8 +217,8 @@ if __name__ == '__main__':
             "function": alternative_miner
         }
     }
-    filenames = ["toy.dat", "chess.dat", "accidents.dat", "mushroom.dat", "connect.dat"]
-    minFrequencies = [ 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
+    filenames = ["chess.dat", "accidents.dat", "mushroom.dat", "connect.dat"]
+    minFrequencies = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     for filename in filenames:
         plus_folder = './Datasets/{}'.format(filename)
         for minFrequency in minFrequencies:
@@ -236,5 +233,5 @@ if __name__ == '__main__':
                     "duration": [duration]
                 })
                 frames[key]["frame"] = pd.concat([frames[key]["frame"], new_row], ignore_index=True)
-        frames["apriori"]["frame"].to_csv("./Performance/apriori{}.csv".format(filename[0:-4]), index=False, header=True)
-        frames["eclat"]["frame"].to_csv("./Performance/eclat{}.csv".format(filename[0:-4]), index=False, header=True)
+            frames["apriori"]["frame"].to_csv("./Performance/apriori{}.csv".format(filename[0:-4]), index=False, header=True)
+            frames["eclat"]["frame"].to_csv("./Performance/eclat{}.csv".format(filename[0:-4]), index=False, header=True)
