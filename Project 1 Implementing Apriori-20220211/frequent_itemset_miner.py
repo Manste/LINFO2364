@@ -230,13 +230,13 @@ if __name__ == '__main__':
                 frames[key]["function"](plus_folder, minFrequency)
                 duration = perf_counter() - tic
                 tracemalloc.start()
-                current, peak = tracemalloc.get_traced_memory()
                 new_row = pd.DataFrame({
                     "minFrequency": [minFrequency],
                     "duration": [duration],
                     "currentMemoryUsage": [current/(1024**2)],# In MB
                     "Peak": [peak/(1024**2)] # in MB
                 })
+                current, peak = tracemalloc.get_traced_memory()
                 tracemalloc.stop()
                 frames[key]["frame"] = pd.concat([frames[key]["frame"], new_row], ignore_index=True)
             frames["apriori"]["frame"].to_csv("./Performance/apriori{}.csv".format(filename[0:-4]), index=False, header=True)
