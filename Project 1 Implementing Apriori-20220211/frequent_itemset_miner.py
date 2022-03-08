@@ -21,7 +21,6 @@ Do not change the signature of the apriori and alternative_miner methods as they
 __authors__ = "Group 8: Manuelle Ndamtang <manuelle.ndamtang@student.uclouvain.be>
 """
 
-from itertools import combinations
 from collections import defaultdict
 
 
@@ -192,7 +191,7 @@ def eclat(vertical_dataset, itemset, minFrequency, dataset):
     else:
         print_itemset(itemset, frequency)
     for index, item in enumerate(items[idx:]): # We will generate candidate that are in a sorter manner, that why we use the index variable
-        if frozenset({item}) in vertical_dataset: # to make sure we will only generate candidate that might be frequent and present in dataset
+        if frozenset({item}) in vertical_dataset: # to make sure we will only generate candidate that might be frequent and present in ptojected dataset
             item_set = set(union_set.copy())
             item_set.add(item)
         else:
@@ -206,27 +205,29 @@ if __name__ == '__main__':
     import pandas as pd
     import tracemalloc
 
-    apriori_frame_performance = pd.DataFrame(columns=["minFrequency", "duration", "currentMemoryUsage", "Peak"])
-    alternative_miner_frame_performance = pd.DataFrame(columns=["minFrequency", "duration", "currentMemoryUsage", "Peak"])
-
-    frames = {
-        "apriori": {
-            "frame": apriori_frame_performance,
-            "function": apriori
-        }, "eclat": {
-            "frame": alternative_miner_frame_performance,
-            "function": alternative_miner
-        }
+    filenames = {
+        "mushroom.dat": [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2],
+        "accidents.dat": [0.975, 0.95, 0.925, 0.9, 0.875, 0.85, 0.825, 0.8],
+        "chess.dat": [0.975, 0.95, 0.925, 0.9, 0.875, 0.85, 0.825, 0.8]
     }
-    filenames = ["mushroom.dat"]
-    minFrequencies = [0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2, 0.1]
     for filename in filenames:
+
+        frames = {
+            "apriori": {
+                "frame": pd.DataFrame(columns=["minFrequency", "duration", "currentMemoryUsage", "Peak"]),
+                "function": apriori
+            }, "eclat": {
+                "frame": pd.DataFrame(columns=["minFrequency", "duration", "currentMemoryUsage", "Peak"]),
+                "function": alternative_miner
+            }
+        }
         plus_folder = './Datasets/{}'.format(filename)
+        minFrequencies = filenames[filename]
         for minFrequency in minFrequencies:
             for key in frames.keys():
                 print("\n\nFrequent itemsets of {} with minFrequency {} and {} algorithm".format(filename, minFrequency, key))
-                tic = perf_counter()
                 # save the stats
+                tic = perf_counter()
                 tracemalloc.start()
                 frames[key]["function"](plus_folder, minFrequency)
                 current, peak = tracemalloc.get_traced_memory()
@@ -239,5 +240,4 @@ if __name__ == '__main__':
                 })
                 tracemalloc.stop()
                 frames[key]["frame"] = pd.concat([frames[key]["frame"], new_row], ignore_index=True)
-            frames["apriori"]["frame"].to_csv("./Performance/apriori{}.csv".format(filename[0:-4]), index=False, header=True)
-            frames["eclat"]["frame"].to_csv("./Performance/eclat{}.csv".format(filename[0:-4]), index=False, header=True)
+                frames[key]["frame"].to_csv("./Performance/{}{}.csv".format(key, filename[0:-4]), index=False, header=True)
