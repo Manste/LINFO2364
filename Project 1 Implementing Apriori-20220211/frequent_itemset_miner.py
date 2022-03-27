@@ -40,6 +40,7 @@ class Dataset:
                 self.transactions.append(transaction)
                 for item in transaction:
                     self.items.add(item)
+            self.items = sorted(list(self.items))
         except IOError as e:
             print("Unable to read dataset file!\n" + e)
 
@@ -59,8 +60,7 @@ class Dataset:
 def apriori(filepath, minFrequency):
     """Runs the apriori algorithm on the specified file with the given minimum frequency"""
     dataset = Dataset(filepath)
-    level = 1
-    candidates = [None]
+    candidates = []
     """
     While there always exist candidates generated 
     """
@@ -69,26 +69,11 @@ def apriori(filepath, minFrequency):
             We detect the frequent itemset candidate using the antimocity approach for each level:
             We generate candidates using only superset that are already frequent at each level
         """
-        candidates = generate_candidates(dataset, level, candidates)
+        candidates = generate_candidates(dataset,candidates)
         if not candidates:
             return
-        items_supports = frequencies(candidates, dataset)
-        candidates = check_frequencies(items_supports, minFrequency) # update candidates variables so that in the next search, it will generate candidates only based on the frequent ones
-        level += 1
-
-
-"""
-	After getting the frequency for each itemset, we exclude the non-frequent itemset and print only 
-	the frequent one.
-"""
-def check_frequencies(frequency_per_candidate, min_frequency):
-    frequent_candidates = []
-    for candidate, frequency in frequency_per_candidate.items():
-        if frequency >= min_frequency:
-            frequent_candidates.append(candidate)
-            print_itemset(candidate, frequency)
-    return frequent_candidates
-
+        items_supports = frequencies(candidates, dataset, minFrequency)
+        candidates = list(items_supports.keys())
 
 """
     This function print the results.
@@ -100,7 +85,7 @@ def print_itemset(candidate, frequency):
 """
 	For each candidate, we find it frequency
 """
-def frequencies(candidates, dataset):
+def frequencies(candidates, dataset, minFrequency):
     """
         Counting candidates using the naive process:
         for each line of the dataset, check if we find the candidate
@@ -112,18 +97,19 @@ def frequencies(candidates, dataset):
     """
     for candidate in candidates:
         c = frozenset(candidate)
-        items_frequencies[c] = len(list(filter(c.issubset, dataset.transactions))) / dataset.trans_num()
+        frequency = len(list(filter(c.issubset, dataset.transactions))) / dataset.trans_num()
+        if frequency >= minFrequency:
+            items_frequencies[c] = frequency
+            print_itemset(list(candidate), frequency)
     return items_frequencies
 
 
 """
     We will generate candidate based on frequent itemset detected
 """
-def generate_candidates(dataset, level, last_candidates=[]):
+def generate_candidates(dataset, last_candidates=[]):
     new_candidates = []
-    if level == 0:
-        new_candidates = [None]
-    elif level == 1:
+    if not last_candidates:
         new_candidates = [{item} for item in dataset.items]
     else:
         for index, itemset1 in  enumerate(last_candidates):
@@ -177,12 +163,11 @@ def alternative_miner(filepath, minFrequency):
         projected_dataset = projected_database(vertical_dataset, frozenset(item_set), minFrequency, dataset.trans_num())
         eclat(projected_dataset, frozenset(item_set), minFrequency, dataset)
 
-
 """
     This function recursivily search for the frequent itemset and stop it search for a specific itemset is not frequent
 """
 def eclat(vertical_dataset, itemset, minFrequency, dataset):
-    items = sorted(list(dataset.items))
+    items = dataset.items
     frequency = len(frozenset().union(*vertical_dataset.values())) / dataset.trans_num()
     union_set = sorted(list(itemset))
     idx = items.index(union_set[-1]) + 1
@@ -190,12 +175,10 @@ def eclat(vertical_dataset, itemset, minFrequency, dataset):
         return
     else:
         print_itemset(itemset, frequency)
-    for index, item in enumerate(items[idx:]): # We will generate candidate that are in a sorter manner, that why we use the index variable
-        if frozenset({item}) in vertical_dataset: # to make sure we will only generate candidate that might be frequent and present in ptojected dataset
-            item_set = set(union_set.copy())
-            item_set.add(item)
-        else:
-            continue
+    temp = filter(lambda i: frozenset({i}) in vertical_dataset, items[idx:])
+    for item in temp: # We will generate candidate that are in a sorter manner, that why we use the index variable
+        item_set = set(union_set.copy())
+        item_set.add(item)
         projected_dataset = projected_database(vertical_dataset, frozenset(item_set), minFrequency, dataset.trans_num())
         eclat(projected_dataset, frozenset(item_set), minFrequency, dataset)
 
