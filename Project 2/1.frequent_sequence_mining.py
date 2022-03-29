@@ -4,7 +4,9 @@ import sys
 from collections import defaultdict
 
 class Dataset:
-    """Utility class to manage a dataset stored in a external file."""
+    """This function is inspired from the Utility class to manage a dataset stored in a external file.
+    given during the previous project
+    """
 
     def __init__(self, filepath):
         """reads the dataset file and initializes files"""
@@ -53,9 +55,12 @@ class PrefixSpan:
         self.k_first_values = set()
 
     def support_per_pattern(self, patterns):
+        """This function gives support per patterns"""
         return {pattern: len(set().union(list(map(lambda pos: pos[0], patterns[pattern])))) for pattern in patterns}
 
     def get_next_sequences(self, pattern, positions):
+        """"This function gets the next sequence according to the previous pattern its first positions in the
+        transections """
         next_sequences = defaultdict(list)
         for tid, pid in positions:
             pid += 1
@@ -67,16 +72,20 @@ class PrefixSpan:
         return next_sequences
 
     def dfs(self, pattern, positions):
+        """This function recursively searchs the patterns"""
+
         # get sequences and the list of positions for each transaction
         next_sequences = self.get_next_sequences(pattern, positions)
         # get the support for each sequence found
         next_sequences_support = self.support_per_pattern(next_sequences)
+
         # keep k best results
         first_values = dict(filter(lambda x: x[1] >= self.min_support, next_sequences_support.items())) # keep the values that are bigger or equals to the min_support
         self.results.update(first_values)
         self.k_first_values = sorted(set(self.results.values()), reverse=True)[0:self.k]
         self.k_first_values = self.k_first_values[0:self.k]
-        # update results
+
+        # update results with the k-first values
         results_copy = self.results.copy()
         self.results = {}
         for pattern in results_copy.keys():
@@ -84,9 +93,12 @@ class PrefixSpan:
                 self.results[pattern] = results_copy[pattern]
                 if pattern not in self.covers_per_result:
                     self.covers_per_result[pattern] = next_sequences[pattern]
-        # Update the minimum support
+
+        # Update the minimum support which is the minimum support stored from the
         if len(self.k_first_values) == self.k:
             self.min_support = self.k_first_values[-1]
+
+        # launch the recursive search for frequent sequences
         for next_pattern, positions in next_sequences.items():
             # remove infrequent sequences
             if next_sequences_support[next_pattern] < self.min_support:
@@ -94,18 +106,22 @@ class PrefixSpan:
             self.dfs(next_pattern, positions)
 
     def get_frequent_symbol(self, counter_per_sequence):
+        """Get the frequent pattern according to their support"""
         return [pattern for pattern, support in counter_per_sequence.items() if support > self.min_support]
 
     def main(self):
+        """Main function that start research of pattern through recursion"""
         pattern = tuple()
         positions = [(i, -1) for i in range(len(self.transactions))]
         self.dfs(pattern, positions)
+        self.print_results()
 
     def print_results(self):
+        """Print the results obtained"""
         for pattern, support in self.results.items():
-            p = len(set(map(lambda x: x[0], filter(lambda x: x[0] < self.dataset1.trans_num(), self.covers_per_result[pattern]))))
+            p = len(set(map(lambda x: x[0], filter(lambda x: x[0] < self.dataset1.trans_num(), self.covers_per_result[pattern])))) # get the positive support
             n = support - p
-            print("{} {} {} {}".format(pattern, p, n, support))
+            print("[{}] {} {} {}".format(', '.join(map(str, pattern)), p, n, support))
 
 def main():
     pos_filepath = sys.argv[1] # filepath to positive class file
@@ -113,8 +129,6 @@ def main():
     k = int(sys.argv[3])
     prefixSpan = PrefixSpan(pos_filepath, neg_filepath, k)
     prefixSpan.main()
-    prefixSpan.print_results()
-    print(prefixSpan.k_first_values)
 
 if __name__ == "__main__":
     main()
