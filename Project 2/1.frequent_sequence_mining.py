@@ -102,7 +102,7 @@ class PrefixSpan:
         for next_pattern, positions in next_sequences.items():
             # remove infrequent sequences
             if next_sequences_support[next_pattern] < self.min_support:
-                return
+                continue
             self.dfs(next_pattern, positions)
 
     def get_frequent_symbol(self, counter_per_sequence):

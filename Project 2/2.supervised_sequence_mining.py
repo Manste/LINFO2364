@@ -116,7 +116,7 @@ class PrefixSpan:
             p, n, score = next_sequences_score[next_pattern]
             if p < self.pos_min_support:
                 #print(next_pattern, next_sequences_score[next_pattern], p, self.pos_threshold, self.k_first_scores_values)
-                return
+                continue
             self.dfs(next_pattern, positions)
 
     def main(self):
