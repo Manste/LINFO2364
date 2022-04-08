@@ -138,7 +138,7 @@ class CloSpan:
         # to easily search through our recursion
         if len(self.k_first_scores_values) == self.k:
             self.min_score = self.k_first_scores_values[-1]# Threshold computation
-            self.pos_min_support = (((self.P + self.N)**2) * self.min_score) / (self.P + self.N)
+            self.pos_min_support = (self.P * ((self.P + self.N)**2) * self.min_score) / (self.P * self.N)
 
         # launch the recursive search for frequent sequences
         for next_pattern, positions in next_sequences.items():
