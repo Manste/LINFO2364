@@ -71,14 +71,16 @@ class KFrequentPositiveGraphs(PatternGraphs):
 		self.gid_subsets = subsets
 		self.k = k
 
-	# Stores k first confident patternss found that has not been pruned
+	# Stores k first confident patterns found that has not been pruned
 	def store(self, dfs_code, gid_subsets):
 		p, n = len(gid_subsets[0]), len(gid_subsets[2])
 		support = p+n
-		conf = p / support
+		pos_conf = p / support
+		neg_conf = n / support
+		conf = max(pos_conf, neg_conf) # to avoid the antimonotonicity
 		# Update the k best results
 		min_score = self.get_min_confidence()
-		if conf < min_score: # if the confidence is smaller than the smallest score from the k positive confident pattern
+		if conf < min_score: # if the confidence is smaller than the smallest score from the k positive confident pattern, don't store
 			return
 		#update patterns list with the new pattern
 		self.patterns[(conf, support)].append((dfs_code, gid_subsets))
@@ -122,41 +124,51 @@ class KFrequentPositiveGraphs(PatternGraphs):
 		return [numpy.array(matrix).transpose() for matrix in matrices]
 
 
-def example1():
-	"""
-	Runs gSpan with the specified positive and negative graphs, finds all frequent subgraphs in the positive class
-	with a minimum positive support of minsup and prints them.
-	"""
+def sequential_covering(minsup, database, subsets, k):
+	test_predictions = {}
+	# set the true classes for each graph transactions
+	test_true = {gid: 1 for gid in subsets[1]}
+	test_true.update({gid: -1 for gid in subsets[3]})
+	# the rule list
+	results = []
+	# convert the subsets into list to ease the use of the subset
+	subsets_copy = [list(l) for l in subsets]
+	# 1. Find the highest scoring supervised pattern
+	for _ in range(k):
+		task = KFrequentPositiveGraphs(minsup, database, subsets_copy, 1) # find the "highest scoring" supervised pattern
+		gSpan(task).run() # Launch the gspan task
+		patterns = []
+		for key, values in task.patterns.items():
+			for v in values:
+				patterns.append(v + key)
+		if patterns:
+			patterns.sort(key=lambda p: p[0]) # sort the lowest in the lexicographical order/ p[0] represents the dfs_code
+			_, gid_subsets, _, _ = patterns[0]
+			label = 1 if len(gid_subsets[2]) <= len(gid_subsets[0]) else -1
+			results.append(patterns[0])
+			# set predictions results on test set
+			for gid in gid_subsets[1] + gid_subsets[3]:
+				test_predictions[gid] = label
+			# remove the transactions covered by the pattern from the data
+			for index in range(len(gid_subsets)):
+				for el in gid_subsets[index]:
+					#print(subsets_copy[index], item, item in subsets_copy[index])
+					subsets_copy[index].remove(el)
+	# set the value for the rest of the patterns
+	default = 1 if len(subsets_copy[2]) <= len(subsets_copy[0]) else -1
+	for gid in subsets_copy[1] + subsets_copy[3]:
+		test_predictions[gid] = default
+	accuracy = sum([test_true[gid] == test_predictions[gid] for gid in test_true])/len(test_true)
+	#print the results
+	for dfs_code, _, conf, support in results:
+		print("{} {} {}".format(dfs_code, conf, support))
+	print([test_predictions[k] for k in test_true])
+	print('accuracy: {}'.format(accuracy))
+	print()  # Blank line to indicate end of fold.
+	#print(patterns)
 
-	args = sys.argv
-	database_file_name_pos = args[1]  # First parameter: path to positive class file
-	database_file_name_neg = args[2]  # Second parameter: path to negative class file
-	k = int(args[3])  # Third parameter: k
-	minsup = int(args[4])
 
-	if not os.path.exists(database_file_name_pos):
-		print('{} does not exist.'.format(database_file_name_pos))
-		sys.exit()
-	if not os.path.exists(database_file_name_neg):
-		print('{} does not exist.'.format(database_file_name_neg))
-		sys.exit()
-
-	graph_database = GraphDatabase()  # Graph database object
-	pos_ids = graph_database.read_graphs(database_file_name_pos)  # Reading positive graphs, adding them to database and getting ids
-	neg_ids = graph_database.read_graphs(database_file_name_neg)  # Reading negative graphs, adding them to database and getting ids
-
-	subsets = [pos_ids, neg_ids]  # The ids for the positive and negative labelled graphs in the database
-	task = KFrequentPositiveGraphs(minsup, graph_database, subsets, k)  # Creating task
-
-	gSpan(task).run()  # Running gSpan
-
-	# Printing frequent patterns along with their positive support:
-	for conf, sup in task.patterns.keys():
-		for pattern, gid_subsets in task.patterns[(conf, sup)]:
-			print("{} {} {}".format(pattern, conf, sup))
-
-
-def example2():
+def example3():
 	"""
 	Runs gSpan with the specified positive and negative graphs; finds all frequent subgraphs in the training subset of
 	the positive class with a minimum support of minsup.
@@ -193,7 +205,7 @@ def example2():
 		]
 		# Printing fold number:
 		print('fold {}'.format(1))
-		train_and_evaluate(minsup, graph_database, subsets, k)
+		sequential_covering(minsup, graph_database, subsets, k)
 
 	# Otherwise: performs k-fold cross-validation:
 	else:
@@ -210,37 +222,7 @@ def example2():
 			]
 			# Printing fold number:
 			print('fold {}'.format(i+1))
-			train_and_evaluate(minsup, graph_database, subsets, k)
-
-
-def train_and_evaluate(minsup, database, subsets, k):
-	task = KFrequentPositiveGraphs(minsup, database, subsets, k)  # Creating task
-
-	gSpan(task).run()  # Running gSpan
-
-	# Creating feature matrices for training and testing:
-	features = task.get_feature_matrices()
-	train_fm = numpy.concatenate((features[0], features[2]))  # Training feature matrix
-	train_labels = numpy.concatenate((numpy.full(len(features[0]), 1, dtype=int), numpy.full(len(features[2]), -1, dtype=int)))  # Training labels
-	test_fm = numpy.concatenate((features[1], features[3]))  # Testing feature matrix
-	test_labels = numpy.concatenate((numpy.full(len(features[1]), 1, dtype=int), numpy.full(len(features[3]), -1, dtype=int)))  # Testing labels
-
-	classifier = tree.DecisionTreeClassifier(random_state=1) # Creating model object
-	classifier.fit(train_fm, train_labels)  # Training model
-
-	predicted = classifier.predict(test_fm)  # Using model to predict labels of testing data
-
-	accuracy = metrics.accuracy_score(test_labels, predicted)  # Computing accuracy:
-
-	# Printing frequent patterns along with their positive support:
-	for conf, sup in task.patterns.keys():
-		for pattern, gid_subsets in task.patterns[(conf, sup)]:
-			print("{} {} {}".format(pattern, conf, sup))
-	# printing classification results:
-	print(predicted.tolist())
-	print('accuracy: {}'.format(accuracy))
-	print()  # Blank line to indicate end of fold.
+			sequential_covering(minsup, graph_database, subsets, k)
 
 if __name__ == '__main__':
-	#example1()
-	example2()
+	example3()

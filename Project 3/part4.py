@@ -126,7 +126,7 @@ class KFrequentPositiveGraphs(PatternGraphs):
         return [numpy.array(matrix).transpose() for matrix in matrices]
 
 
-def example2():
+def example4():
     """
 	Runs gSpan with the specified positive and negative graphs; finds all frequent subgraphs in the training subset of
 	the positive class with a minimum support of minsup.
@@ -219,4 +219,4 @@ def train_and_evaluate(minsup, database, subsets, k):
 
 
 if __name__ == '__main__':
-    example2()
+    example4()
