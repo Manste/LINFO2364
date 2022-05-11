@@ -154,7 +154,7 @@ def sequential_covering(minsup, database, subsets, k):
 				for el in gid_subsets[index]:
 					#print(subsets_copy[index], item, item in subsets_copy[index])
 					subsets_copy[index].remove(el)
-	# set the value for the rest of the patterns
+	# set the value for the rest of the transactions
 	default = 1 if len(subsets_copy[2]) <= len(subsets_copy[0]) else -1
 	for gid in subsets_copy[1] + subsets_copy[3]:
 		test_predictions[gid] = default
