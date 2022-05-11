@@ -77,7 +77,7 @@ class KFrequentPositiveGraphs(PatternGraphs):
 		support = p+n
 		pos_conf = p / support
 		neg_conf = n / support
-		conf = max(pos_conf, neg_conf) # to avoid the antimonotonicity
+		conf = max(pos_conf, neg_conf) # to ensure the antimonotonicity
 		# Update the k best results
 		min_score = self.get_min_confidence()
 		if conf < min_score: # if the confidence is smaller than the smallest score from the k positive confident pattern, don't store
